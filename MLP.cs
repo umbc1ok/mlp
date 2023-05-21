@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -35,9 +36,9 @@ namespace MLP_TAKE2
         private double[] hiddenLayerBias;
         private double[] outputLayerBias;
 
-
+        
         private int numberOfInputNeurons;
-        private int numberOfOutputNeurons;
+        private int numberOfOutputNeurons; //make it as a List with length of amount of hidden layers
         private int numberOfHiddenNeurons;
 
 
@@ -53,11 +54,11 @@ namespace MLP_TAKE2
         private List<List<double>> data;
         private List<List<double>> desiredOutputs;
 
-        public MLP(int numberOfInputNeurons, int numberOfHiddenNeurons, int numberOfOutputs, bool bias)
+        public MLP(int numberOfInputNeurons, int numberOfHiddenNeurons, int numberOfOutputs, bool bias) //(list<int> layers=[inputammout, hiddenammount1, hiddenammount2, ..., hiddenammountn, outputammount], int bias)
         {
-            this.numberOfInputNeurons = numberOfInputNeurons;
-            this.numberOfHiddenNeurons = numberOfHiddenNeurons;
-            this.numberOfOutputNeurons = numberOfOutputs;
+            this.numberOfInputNeurons = numberOfInputNeurons; //layers[0]
+            this.numberOfHiddenNeurons = numberOfHiddenNeurons;//for i=1; i<layers.length-1; i++
+            this.numberOfOutputNeurons = numberOfOutputs; //layers[-1]
 
             desiredOutput = new double[numberOfOutputs];
             currentSample = new double[numberOfInputNeurons];
@@ -232,7 +233,7 @@ namespace MLP_TAKE2
 
         }
 
-        public void Train(int numberOfEpochs, double learningRate,double momentum)
+        public void Train(int numberOfEpochs, double learningRate,double momentum, String saveToFilename)
         {
             //NA RAZIE JEST HARDCODOWANE BO CHCE MIEC TYLKO ROZPISANY ALGORYTM (numberOfSamples ofc)
             int numberOfSamples = 75;
@@ -252,6 +253,57 @@ namespace MLP_TAKE2
                 }
             }
         }
+
+        private void SaveNetworkToFile(String filename)
+        {
+            try
+            {
+                // Create a FileStream to write the serialized data
+                FileStream fileStream = new FileStream(filename, FileMode.Create);
+
+                // Create a BinaryFormatter to perform the serialization
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                // Serialize the object to the file
+                formatter.Serialize(fileStream, this);
+
+                // Close the file stream
+                fileStream.Close();
+
+                Console.WriteLine("Class saved to file: " + filename);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error saving class to file: " + ex.Message);
+            }
+        }
+        
+        /*public MLP ReadNetworkFromFile(String filename)
+        {
+            try
+            {
+                // Create a FileStream to read the serialized data
+                FileStream fileStream = new FileStream(filename, FileMode.Open);
+
+                // Create a BinaryFormatter to perform the deserialization
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                // Deserialize the object from the file
+                MLP obj = (MLP)formatter.Deserialize(fileStream);
+
+                // Close the file stream
+                fileStream.Close();
+
+                Console.WriteLine("Class loaded from file: " + filename);
+
+                return obj;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error reading class from file: " + ex.Message);
+                return null;
+            }
+        }*/
 
         private void ShuffleData()
         {
