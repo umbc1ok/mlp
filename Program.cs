@@ -141,7 +141,12 @@ mlp.Test(0, 130);
 
 mlp.SaveNetworkToFile("../../../test");
 GC.Collect();
-MLP mlp2 = MLP.ReadNetworkFromFile("../../../test");
+MLP mlp2 = new MLP(2, 2, 2);
+mlp2 = MLP.ReadNetworkFromFile("../../../test", mlp2);
+
+Console.WriteLine("\n\n\nmlp inputs: " + mlp2.numberOfInputNeurons);
+Console.WriteLine("mlp hidden: " + mlp2.numberOfHiddenNeurons);
+Console.WriteLine("mlp outputs: " + mlp2.numberOfOutputNeurons);
 
 mlp2.LoadData("../../../testing.data");
 Console.WriteLine("Tests:");

@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MLP_TAKE2
 {
@@ -43,10 +45,13 @@ namespace MLP_TAKE2
         private double[] outputLayerBias;
 
         
-        private int numberOfInputNeurons;
+        /*private int numberOfInputNeurons;
         private int numberOfOutputNeurons; //make it as a List with length of amount of hidden layers
-        private int numberOfHiddenNeurons;
+        private int numberOfHiddenNeurons;*/
 
+        public int numberOfInputNeurons;
+        public int numberOfOutputNeurons; //make it as a List with length of amount of hidden layers
+        public int numberOfHiddenNeurons;
 
         private double[] weighedSumsHiddenLayer;
         private double[] hiddenLayerOutputs;
@@ -254,22 +259,67 @@ namespace MLP_TAKE2
             }
         }
 
+        private string convertMultipleListToString(double[,] list)
+        {
+            int rows = list.GetLength(0);
+            int columns = list.GetLength(1);
+
+            List<string> rowsAsStrings = new List<string>();
+
+            for (int i = 0; i < rows; i++)
+            {
+                List<string> columnsAsStrings = new List<string>();
+
+                for (int j = 0; j < columns; j++)
+                {
+                    columnsAsStrings.Add(list[i, j].ToString());
+                }
+
+                rowsAsStrings.Add(string.Join(" , ", columnsAsStrings));
+            }
+
+            string formattedString = string.Join("\n", rowsAsStrings);
+            Console.WriteLine("multiple array string : " + formattedString + "\n\n");
+            return formattedString;
+        }
+
+        private string convertSingleListToString(double[] list)
+        {
+            string formattedString = "";
+            for (int i=0; i < list.Length; i++)
+            {
+                formattedString = string.Join(" , ", list[i].ToString());
+            }
+            Console.WriteLine("single array string : "+formattedString + "\n\n");
+            return formattedString;
+        }
+
         public void SaveNetworkToFile(String filename)
         {
             try
             {
-                // Create a FileStream to write the serialized data
-                FileStream fileStream = new FileStream(filename, FileMode.Create);
+                string mlpstring = numberOfInputNeurons.ToString() + " , " + numberOfHiddenNeurons.ToString() + " , " + numberOfOutputNeurons.ToString() + " endl ";
+                mlpstring += convertSingleListToString(currentSample) + " endl ";
+                mlpstring += convertSingleListToString(desiredOutput) + " endl ";
+                mlpstring += convertMultipleListToString(hiddenLayerMatrix) + " endl ";
+                mlpstring += convertMultipleListToString(outputLayerMatrix) + " endl ";
+                mlpstring += convertMultipleListToString(hiddenLayerGradientMatrix) + " endl ";
+                mlpstring += convertMultipleListToString(outputLayerGradientMatrix) + " endl ";
+                mlpstring += convertMultipleListToString(hiddenLayerDeltaMatrix) + " endl ";
+                mlpstring += convertMultipleListToString(outputLayerDeltaMatrix) + " endl ";
+                mlpstring += convertSingleListToString(hiddenLayerBiasGradient) + " endl ";
+                mlpstring += convertSingleListToString(outputLayerBiasGradient) + " endl ";
+                mlpstring += convertSingleListToString(hiddenLayerBiasDelta) + " endl ";
+                mlpstring += convertSingleListToString(outputLayerBiasDelta) + " endl ";
+                mlpstring += convertSingleListToString(hiddenLayerBias) + " endl ";
+                mlpstring += convertSingleListToString(outputLayerBias) + " endl ";
+                mlpstring += convertSingleListToString(weighedSumsHiddenLayer) + " endl ";
+                mlpstring += convertSingleListToString(hiddenLayerOutputs) + " endl ";
+                mlpstring += convertSingleListToString(weighedSumsOutputLayer) + " endl ";
+                mlpstring += convertSingleListToString(outputLayerOutputs) + " endl ";
 
-                // Create a BinaryFormatter to perform the serialization
-                BinaryFormatter formatter = new BinaryFormatter();
-
-                // Serialize the object to the file
-                formatter.Serialize(fileStream, this);
-
-                // Close the file stream
-                fileStream.Close();
-
+                File.WriteAllText(filename, mlpstring);
+                Console.WriteLine("\nmlpstring\n" + mlpstring + "\n\n");
                 Console.WriteLine("Class saved to file: " + filename);
             }
             catch (Exception ex)
@@ -278,24 +328,78 @@ namespace MLP_TAKE2
             }
         }
         
-        public static MLP ReadNetworkFromFile(String filename)
+        private double[,] convertStringToMultipleArray(string line)
+        {
+            Console.WriteLine("multiple: ");
+            string[] rowStrings = line.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            int rows = rowStrings.Length;
+            int columns = rowStrings[0].Split(new[] { " , " }, StringSplitOptions.RemoveEmptyEntries).Length;
+
+            Console.WriteLine(rows + " _ " + columns + "\n");
+            Console.WriteLine(line + "\n\n");
+            double[,] array = new double[rows, columns];
+
+            for (int i = 0; i < rows; i++)
+            {
+                string[] columnStrings = rowStrings[i].Split(new[] { " , " }, StringSplitOptions.RemoveEmptyEntries);
+
+                for (int j = 0; j < columns; j++)
+                {
+                    if (double.TryParse(columnStrings[j], out double value))
+                    {
+                        array[i, j] = value;
+                    }
+                    else
+                    {
+                        Console.WriteLine("error in converting at[" + i + ","+j+"]: " + columnStrings[j]);
+                    }
+                }
+            }
+            return array;
+        }
+
+        private double[] convertStringToSingleArray(string line)
+        {
+            string[] valueStrings = line.Split(new[] { " , " }, StringSplitOptions.None);
+            double[] list = new double[valueStrings.Length];
+
+            Console.WriteLine("single: " + valueStrings.Length + "\n");
+            Console.WriteLine(line + "\n\n");
+            for (int i = 0; i < valueStrings.Length; i++)
+            {
+                if (double.TryParse(valueStrings[i], out double value))
+                {
+                    list[i] = value;
+                }
+                else
+                {
+                    Console.WriteLine("error in converting at ["+ i+ "]: " + valueStrings[i]);
+                }
+                Console.WriteLine("list[" + i + "]: " + list[i]);
+            }
+            return list;
+        }
+
+        public static MLP ReadNetworkFromFile(String filename, MLP obj)
         {
             try
             {
-                // Create a FileStream to read the serialized data
-                FileStream fileStream = new FileStream(filename, FileMode.Open);
+                string fileContent = File.ReadAllText(filename);
+                
+                string[] lines = fileContent.Split(new[] { " endl " }, StringSplitOptions.RemoveEmptyEntries);
+                string[] firstline = lines[0].Split(new[] {" , "}, StringSplitOptions.RemoveEmptyEntries);
+                int.TryParse(firstline[0], out int inputNeurons);
+                int.TryParse(firstline[1], out int hiddenNeurons);
+                int.TryParse(firstline[2], out int outputNeurons);
+                //MLP obj = new MLP(inputNeurons, hiddenNeurons, outputNeurons);
+                obj.numberOfInputNeurons = inputNeurons;
+                obj.numberOfHiddenNeurons = hiddenNeurons;
+                obj.numberOfOutputNeurons = outputNeurons;
+                Console.WriteLine("inputs: "+obj.numberOfInputNeurons+", hidden: "+obj.numberOfHiddenNeurons+", output: "+obj.numberOfOutputNeurons+"\n\n");
+                obj.setArraysFromFile(lines);
 
-                // Create a BinaryFormatter to perform the deserialization
-                BinaryFormatter formatter = new BinaryFormatter();
-
-                // Deserialize the object from the file
-                MLP obj = (MLP)formatter.Deserialize(fileStream);
-
-                // Close the file stream
-                fileStream.Close();
 
                 Console.WriteLine("Class loaded from file: " + filename);
-
                 return obj;
             }
             catch (Exception ex)
@@ -304,6 +408,37 @@ namespace MLP_TAKE2
                 return null;
             }
         }
+
+        public void setArraysFromFile(string[] stringArrays)
+        {
+            currentSample = convertStringToSingleArray(stringArrays[1]);
+            desiredOutput = convertStringToSingleArray(stringArrays[2]);
+
+            hiddenLayerMatrix = convertStringToMultipleArray(stringArrays[3]);
+            outputLayerMatrix = convertStringToMultipleArray(stringArrays[4]);
+
+            hiddenLayerGradientMatrix = convertStringToMultipleArray(stringArrays[5]);
+            outputLayerGradientMatrix = convertStringToMultipleArray(stringArrays[6]);
+
+            hiddenLayerDeltaMatrix = convertStringToMultipleArray(stringArrays[7]);
+            outputLayerDeltaMatrix = convertStringToMultipleArray(stringArrays[8]);
+
+            hiddenLayerBiasGradient = convertStringToSingleArray(stringArrays[9]);
+            outputLayerBiasGradient = convertStringToSingleArray(stringArrays[10]);
+
+            hiddenLayerBiasDelta = convertStringToSingleArray(stringArrays[11]);
+            outputLayerBiasDelta = convertStringToSingleArray(stringArrays[12]);
+
+
+            hiddenLayerBias = convertStringToSingleArray(stringArrays[13]);
+            outputLayerBias = convertStringToSingleArray(stringArrays[14]);
+            
+            weighedSumsHiddenLayer = convertStringToSingleArray(stringArrays[15]);
+            hiddenLayerOutputs = convertStringToSingleArray(stringArrays[16]);
+
+            weighedSumsOutputLayer = convertStringToSingleArray(stringArrays[17]);
+            outputLayerOutputs = convertStringToSingleArray(stringArrays[18]);
+    }
 
         private void ShuffleData()
         {
@@ -352,7 +487,12 @@ namespace MLP_TAKE2
         {
             for(int i = 0; i < numberOfInputNeurons; i++)
             {
-                currentSample[i] = data.ElementAt(numberOfSample).ElementAt(i);
+                try
+                {
+                    Console.WriteLine("data["+numberOfSample+"] length: " + data.ElementAt(i).Count + " i: "+i);
+                    currentSample[i] = data.ElementAt(numberOfSample).ElementAt(i);
+
+                } catch (Exception e) { Console.WriteLine("number of samples error: " + e); }
             }
             for(int i = numberOfInputNeurons; i< numberOfOutputNeurons+numberOfInputNeurons; i++)
             {
