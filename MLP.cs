@@ -445,7 +445,6 @@ namespace MLP_TAKE2
                     hiddenLayerGradientMatrix[i, j] = result;
                 }
                 
-
             }
             // HERE WE CALCULATE BIAS DERIVATIVE FOR HIDDEN LAYER
             // Take this with a pinch of salt, I am not sure if I'm doing it the right way.
