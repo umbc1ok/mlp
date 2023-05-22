@@ -228,12 +228,12 @@ namespace MLP_TAKE2
             return result;
         }
 
-        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle)
+        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle, double minError)
         {
             //NA RAZIE JEST HARDCODOWANE BO CHCE MIEC TYLKO ROZPISANY ALGORYTM (numberOfSamples ofc)
-            int numberOfSamples = 130;
+            int numberOfSamples = 99;
             InitializeWeightsAndBiases(bias);
-
+            string toFile = "";
             for(int i =0; i<numberOfEpochs; i++)
             {
                 double mse = 0d;
@@ -249,8 +249,22 @@ namespace MLP_TAKE2
                     BackwardPropagation();
                     ApplyNewWeights(learningRate,momentum);
                 }
-                //Console.WriteLine("Blad dla calej warstwy:" + mse);
-                //Console.WriteLine("Sredni blad dla calej warstwy:" + mse/(double)numberOfSamples);
+                if (mse<minError)
+                {
+                    Console.WriteLine("Reached minerror");
+                    break;
+                }
+                if (i % 10 == 0) toFile += "Epoch " + i + " error: " + mse + "\n";
+            }
+            saveStringToFile("../../../Stats/globalError.data", toFile);
+            
+        }
+
+        private void saveStringToFile(string filePath,string text)
+        {
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                writer.Write(text);
             }
         }
 

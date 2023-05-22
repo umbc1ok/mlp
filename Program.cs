@@ -134,15 +134,16 @@ MLP mlp = new MLP(4, 4, 3);
 mlp.LoadData("../../../training.data");
 
 Console.WriteLine("TRAINING:");
-mlp.Train(1000,0.1,0.9, true,true);
+mlp.Train(1000,0.1,0.9, true,true,1);
 Console.WriteLine("FINISHED TRAINING:");
+Console.WriteLine("");
 Console.WriteLine("Testing learning samples:");
-mlp.Test(0, 130);
+mlp.Test(0, 100);
 
-mlp.SaveNetworkToFile("../../../test");
-GC.Collect();
-MLP mlp2 = MLP.ReadNetworkFromFile("../../../test");
+//mlp.SaveNetworkToFile("../../../test");
+//MLP mlp2 = MLP.ReadNetworkFromFile("../../../test");
 
-mlp2.LoadData("../../../testing.data");
+//mlp2.LoadData("../../../testing.data");
 Console.WriteLine("Tests:");
-mlp2.Test(0,20);
+mlp.LoadData("../../../testing.data");
+mlp.Test(0,50);
