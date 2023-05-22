@@ -128,21 +128,23 @@ MLP ReadNetworkFromFile(String filename)
 //mode == "2"  -> test 
 
 //**************************************************************
+List<int> neuronsInEachLayer = new List<int>();
+neuronsInEachLayer.Add(4);
+neuronsInEachLayer.Add(4);
 
-MLP mlp = new MLP(4, 4, 3);
+MLP mlp = new MLP(4, 2, neuronsInEachLayer, 3);
 
 mlp.LoadData("../../../training.data");
 
 Console.WriteLine("TRAINING:");
-mlp.Train(1000,0.1,0.9, true,true);
+mlp.Train(200,0.15,0.9,true,true);
 Console.WriteLine("FINISHED TRAINING:");
 Console.WriteLine("Testing learning samples:");
 mlp.Test(0, 130);
 
-mlp.SaveNetworkToFile("../../../test");
-GC.Collect();
-MLP mlp2 = MLP.ReadNetworkFromFile("../../../test");
+//GC.Collect();
+//MLP mlp2 = MLP.ReadNetworkFromFile("../../../test");
 
-mlp2.LoadData("../../../testing.data");
+//mlp2.LoadData("../../../testing.data");
 Console.WriteLine("Tests:");
-mlp2.Test(0,20);
+mlp.Test(0,20);

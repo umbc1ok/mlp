@@ -23,64 +23,140 @@ namespace MLP_TAKE2
         // Hidden layer and output layer matrices are in this form:
         // First index is the index of neuron
         // second index is the index of weights
-        private double[,] hiddenLayerMatrix;
+        private double[][,] hiddenLayerMatrix;
         private double[,] outputLayerMatrix;
 
-        private double[,] hiddenLayerGradientMatrix;
+        private double[][,] hiddenLayerGradientMatrix;
         private double[,] outputLayerGradientMatrix;
 
-        private double[,] hiddenLayerDeltaMatrix;
+
+        private double[][] hiddenLayerFactors;
+
+
+        private double[][,] hiddenLayerDeltaMatrix;
         private double[,] outputLayerDeltaMatrix;
 
-        private double[] hiddenLayerBiasGradient;
+        private double[][] hiddenLayerBiasGradient;
         private double[] outputLayerBiasGradient;
 
-        private double[] hiddenLayerBiasDelta;
+        private double[][] hiddenLayerBiasDelta;
         private double[] outputLayerBiasDelta;
 
 
-        private double[] hiddenLayerBias;
+        private double[][] hiddenLayerBias;
         private double[] outputLayerBias;
 
         
         private int numberOfInputNeurons;
         private int numberOfOutputNeurons; //make it as a List with length of amount of hidden layers
-        private int numberOfHiddenNeurons;
+        private int[] numberOfHiddenNeurons;
+        private int numberOfHiddenLayers;
 
 
-        private double[] weighedSumsHiddenLayer;
-        private double[] hiddenLayerOutputs;
+        private double[][] weighedSumsHiddenLayer;
+        private double[][] hiddenLayerOutputs;
 
         private double[] weighedSumsOutputLayer;
         private double[] outputLayerOutputs;
+        private double[] outputLayerFactor;
 
 
 
         private List<List<double>> data;
         private List<List<double>> desiredOutputs;
 
-        public MLP(int numberOfInputNeurons, int numberOfHiddenNeurons, int numberOfOutputs) //(list<int> layers=[inputammout, hiddenammount1, hiddenammount2, ..., hiddenammountn, outputammount], int bias)
+        public MLP(int numberOfInputNeurons, int numberOfHiddenLayers, List<int>numberOfHiddenNeurons,int numberOfOutputs) //(list<int> layers=[inputammout, hiddenammount1, hiddenammount2, ..., hiddenammountn, outputammount], int bias)
         {
             this.numberOfInputNeurons = numberOfInputNeurons; //layers[0]
-            this.numberOfHiddenNeurons = numberOfHiddenNeurons;//for i=1; i<layers.length-1; i++
+            this.numberOfHiddenNeurons = new int[numberOfHiddenLayers];//for i=1; i<layers.length-1; i++
+            for(int i = 0; i< numberOfHiddenNeurons.Count; i++)
+            {
+                this.numberOfHiddenNeurons[i] = numberOfHiddenNeurons[i];
+            }
             this.numberOfOutputNeurons = numberOfOutputs; //layers[-1]
-
+            this.numberOfHiddenLayers = numberOfHiddenLayers;
             desiredOutput = new double[numberOfOutputs];
             currentSample = new double[numberOfInputNeurons];
-            hiddenLayerMatrix = new double[numberOfHiddenNeurons, numberOfInputNeurons];
-            outputLayerMatrix = new double[numberOfOutputs, numberOfHiddenNeurons];
-            hiddenLayerBias = new double[numberOfHiddenNeurons];
-            outputLayerBias = new double[numberOfOutputs];
 
-            hiddenLayerBiasGradient = new double[numberOfHiddenNeurons];
-            outputLayerBiasGradient = new double[numberOfOutputNeurons];
+            hiddenLayerMatrix = new double[numberOfHiddenLayers][,];
+            hiddenLayerGradientMatrix = new double[numberOfHiddenLayers][,];
+            hiddenLayerDeltaMatrix = new double[numberOfHiddenLayers][,];
+            hiddenLayerBias = new double[numberOfHiddenLayers][];
+            hiddenLayerBiasGradient = new double[numberOfHiddenLayers][];
+            weighedSumsHiddenLayer = new double[numberOfHiddenLayers][];
+            hiddenLayerOutputs = new double[numberOfHiddenLayers][];
+            hiddenLayerBiasDelta = new double[numberOfHiddenLayers][];
+            hiddenLayerFactors = new double[numberOfHiddenLayers][];
+            //FIRST HIDDEN LAYER HAS WEIGHTS DEPENDENT ON INPUT LAYER, THAT'S WHY THIS LINE IS HERE
+            hiddenLayerMatrix[0] = new double[numberOfHiddenNeurons[0],numberOfInputNeurons];
+            hiddenLayerBias[0] = new double[numberOfHiddenNeurons[0]];
+            hiddenLayerBiasGradient[0] = new double[numberOfHiddenNeurons[0]];
+            hiddenLayerGradientMatrix[0] = new double[numberOfHiddenNeurons[0], numberOfInputNeurons];
+            hiddenLayerDeltaMatrix[0] = new double[numberOfHiddenNeurons[0], numberOfInputNeurons];
+            weighedSumsHiddenLayer[0] = new double[numberOfHiddenNeurons[0]];
+            hiddenLayerOutputs[0] = new double[numberOfHiddenNeurons[0]];
+            hiddenLayerBiasDelta[0] = new double[numberOfHiddenNeurons[0]];
+            hiddenLayerFactors[0] = new double[numberOfHiddenNeurons[0]];
 
+            for (int i = 1; i < numberOfHiddenLayers; i++)
+            {
+                hiddenLayerMatrix[i] = new double[numberOfHiddenNeurons[i], numberOfHiddenNeurons[i-1]];
+                hiddenLayerGradientMatrix[i] = new double[numberOfHiddenNeurons[i], numberOfHiddenNeurons[i - 1]];
+                hiddenLayerDeltaMatrix[i] = new double[numberOfHiddenNeurons[i], numberOfHiddenNeurons[i - 1]];
+                hiddenLayerBias[i] = new double[numberOfHiddenNeurons[i]];
+                hiddenLayerBiasGradient[i] = new double[numberOfHiddenNeurons[i]];
+                weighedSumsHiddenLayer[i] = new double[numberOfHiddenNeurons[i]];
+                hiddenLayerOutputs[i] = new double[numberOfHiddenNeurons[i]];
+                hiddenLayerBiasDelta[i] = new double[numberOfHiddenNeurons[i]];
+                hiddenLayerFactors[i] = new double[numberOfHiddenNeurons[i]];
+            }
+            
 
-            weighedSumsHiddenLayer = new double[numberOfHiddenNeurons];
-            hiddenLayerOutputs = new double[numberOfHiddenNeurons];
-            hiddenLayerGradientMatrix = new double[numberOfHiddenNeurons, numberOfInputNeurons];
-            hiddenLayerDeltaMatrix = new double[numberOfHiddenNeurons, numberOfInputNeurons];
-            hiddenLayerBiasDelta = new double[numberOfHiddenNeurons];
+            // hiddenLayerBias[i] = new double[numberOfHiddenNeurons[i]];
+            for (int i = 0; i < numberOfHiddenLayers; i++)
+            {
+                for(int j = 0; j < numberOfHiddenNeurons[i]; j++)
+                {
+                    int numberOfPreviousLayerOutputs;
+                    if (i == 0)
+                    {
+                        numberOfPreviousLayerOutputs = numberOfInputNeurons;
+                    }
+                    else
+                    {
+                        numberOfPreviousLayerOutputs = numberOfHiddenNeurons[i - 1];
+                    }
+                    for (int k = 0; k < numberOfPreviousLayerOutputs; k++)
+                    {
+                        hiddenLayerMatrix[i][j, k] = 0;
+                        hiddenLayerGradientMatrix[i][j,k] = 0;
+                        hiddenLayerMatrix[i][j, k] = 0;
+                    }
+                    hiddenLayerBias[i][j] = 0;
+                    hiddenLayerBiasGradient[i][j] = 0;
+                    weighedSumsHiddenLayer[i][j] = 0;
+                    hiddenLayerOutputs[i][j] = 0;
+                    hiddenLayerBiasDelta[i][j] = 0;
+                }
+            }
+            for (int i = 1; i < numberOfHiddenLayers; i++)
+            {
+                for (int j = 0; j < numberOfHiddenNeurons[i]; j++)
+                {
+                    for (int k = 0; k < numberOfHiddenNeurons[i-1]; k++)
+                    {
+                        hiddenLayerMatrix[i][j, k] = 0;
+                        hiddenLayerGradientMatrix[i][j, k] = 0;
+                        hiddenLayerMatrix[i][j, k] = 0;
+                    }
+                    hiddenLayerBias[i][j] = 0;
+                    hiddenLayerBiasGradient[i][j] = 0;
+                    weighedSumsHiddenLayer[i][j] = 0;
+                    hiddenLayerOutputs[i][j] = 0;
+                    hiddenLayerBiasDelta[i][j] = 0;
+                }
+            }
+            /*
             for (int i = 0; i < numberOfHiddenNeurons; i++)
             {
                 hiddenLayerBiasGradient[i] = 0;
@@ -92,12 +168,19 @@ namespace MLP_TAKE2
                     hiddenLayerGradientMatrix[i,j] = 0;
                     hiddenLayerDeltaMatrix[i,j] = 0;
                 }
-            }
-            
+            }*/
+
+            // uwaga na ta linijke
+            outputLayerMatrix = new double[numberOfOutputs, numberOfHiddenNeurons[numberOfHiddenLayers - 1]];
+            outputLayerBias = new double[numberOfOutputs];
+            outputLayerBiasGradient = new double[numberOfOutputNeurons];
+            outputLayerFactor = new double[numberOfOutputNeurons];
             outputLayerOutputs = new double[numberOfOutputNeurons];
-            weighedSumsOutputLayer = new double[numberOfOutputNeurons]; //tu bylo numberOfHiddenNeurons, ale to byl razcej blad (nie krytyczny, program dzialal, ale duzy blad)
-            outputLayerGradientMatrix = new double[numberOfOutputNeurons, numberOfHiddenNeurons];
-            outputLayerDeltaMatrix = new double[numberOfOutputNeurons, numberOfHiddenNeurons];
+
+            weighedSumsOutputLayer = new double[numberOfOutputNeurons];  //tu bylo numberOfHiddenNeurons, ale to byl razcej blad (nie krytyczny, program dzialal, ale duzy blad)
+            // idk czy to jest dobrze
+            outputLayerGradientMatrix = new double[numberOfOutputNeurons, numberOfHiddenNeurons[numberOfHiddenNeurons.Count-1]];
+            outputLayerDeltaMatrix = new double[numberOfOutputNeurons, numberOfHiddenNeurons[numberOfHiddenNeurons.Count - 1]];
             outputLayerBiasDelta = new double[numberOfOutputNeurons];
             for (int i = 0; i < numberOfOutputNeurons; i++)
             {
@@ -105,7 +188,7 @@ namespace MLP_TAKE2
                 weighedSumsOutputLayer[i] = 0;
                 outputLayerOutputs[i] = 0;
                 outputLayerBiasDelta[i] = 0;
-                for(int j = 0; j< numberOfHiddenNeurons; j++)
+                for(int j = 0; j< numberOfHiddenNeurons[numberOfHiddenNeurons.Count - 1]; j++)
                 {
                     outputLayerGradientMatrix[i,j] = 0;
                     outputLayerDeltaMatrix[i, j] = 0;
@@ -337,11 +420,6 @@ namespace MLP_TAKE2
                 {
                     incorrectlyClassified++;
                 }
-                /*
-                Console.Write(outputLayerOutputs[0]);
-                Console.Write(outputLayerOutputs[1]);
-                Console.Write(outputLayerOutputs[2]);
-                */
             }
             Console.WriteLine("Correctly classified:" + correctlyClassified);
             Console.WriteLine("Incorrectly classified:" + incorrectlyClassified);
@@ -361,31 +439,45 @@ namespace MLP_TAKE2
         }
         private void ApplyNewWeights(double learningRate,double momentum)
         {
-            //Applying for hidden layer
-            for (int i = 0; i < numberOfHiddenNeurons; i++)
+            //Applying for hidden layers
+            for(int layerIndex = 0; layerIndex < numberOfHiddenLayers;layerIndex++)
             {
-                for (int j = 0; j < numberOfInputNeurons; j++)
+                for (int i = 0; i < numberOfHiddenNeurons[layerIndex]; i++)
                 {
-                    hiddenLayerMatrix[i, j] += learningRate * -1.0 * hiddenLayerGradientMatrix[i, j] 
-                        + hiddenLayerDeltaMatrix[i,j]*momentum; 
-                    // MOMENTUM
-                    hiddenLayerDeltaMatrix[i,j] = learningRate * -1.0 * hiddenLayerGradientMatrix[i, j]
-                        + hiddenLayerDeltaMatrix[i, j] * momentum;
-                }
-                hiddenLayerBias[i] += learningRate * -1.0 * hiddenLayerBiasGradient[i] + hiddenLayerBiasDelta[i] * momentum;
-                hiddenLayerBiasDelta[i] = learningRate * -1.0 * hiddenLayerBiasGradient[i] + hiddenLayerBiasDelta[i] * momentum;
+                    int numberOfInputNeuronsIntoLayer;
+                    if (layerIndex == 0)
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfInputNeurons;
+                    }
+                    else
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfHiddenNeurons[layerIndex - 1];
+                    }
+                    for (int j = 0; j < numberOfInputNeuronsIntoLayer; j++)
+                    {
+                        hiddenLayerMatrix[layerIndex][i, j] += learningRate * -1.0 * hiddenLayerGradientMatrix[layerIndex][i, j] 
+                            + hiddenLayerDeltaMatrix[layerIndex][i,j]*momentum; 
+                        // MOMENTUM
+                        hiddenLayerDeltaMatrix[layerIndex][i,j] = learningRate * -1.0 * hiddenLayerGradientMatrix[layerIndex][i, j]
+                            + hiddenLayerDeltaMatrix[layerIndex][i, j] * momentum;
+                    }
+                    hiddenLayerBias[layerIndex][i] += learningRate * -1.0 * hiddenLayerBiasGradient[layerIndex][i] + hiddenLayerBiasDelta[layerIndex][i] * momentum;
+                    hiddenLayerBiasDelta[layerIndex][i] = learningRate * -1.0 * hiddenLayerBiasGradient[layerIndex][i] + hiddenLayerBiasDelta[layerIndex][i] * momentum;
+                }   
             }
             //Apply for output layer
             for (int i = 0; i < numberOfOutputNeurons; i++)
             {
-                for (int j = 0; j < numberOfHiddenNeurons; j++)
+                for (int j = 0; j < numberOfHiddenNeurons[numberOfHiddenLayers-1]; j++)
                 {
                     outputLayerMatrix[i, j] += learningRate * -outputLayerGradientMatrix[i, j] + outputLayerDeltaMatrix[i,j]*momentum;
                     // MOMENTUM
                     outputLayerDeltaMatrix[i,j] = learningRate * -outputLayerGradientMatrix[i, j] + outputLayerDeltaMatrix[i, j] * momentum;
                 }
+                
                 outputLayerBias[i] += learningRate * -1.0 * outputLayerBiasGradient[i] + outputLayerBiasDelta[i]*momentum;
                 outputLayerBiasDelta[i] = learningRate * -1.0 * outputLayerBiasGradient[i] + outputLayerBiasDelta[i]*momentum;
+                
             }
         }
 
@@ -394,25 +486,37 @@ namespace MLP_TAKE2
             Random random = new Random();
 
             // INITIALIZATION FOR HIDDEN LAYER
-            for ( int i = 0; i < numberOfHiddenNeurons ; i++)
+            for(int layerIndex = 0; layerIndex < numberOfHiddenLayers; layerIndex++)
             {
-                for(int j = 0; j < numberOfInputNeurons ; j++)
-                { 
-                    hiddenLayerMatrix[i,j] = random.NextDouble() * 2 - 1; // randomizing a number in range [-1,1]
-                }
-                if (bias)
+                for ( int i = 0; i < numberOfHiddenNeurons[layerIndex] ; i++)
                 {
-                    hiddenLayerBias[i] = random.NextDouble() * 2 - 1;   // same here
-                }
-                else
-                {
-                    hiddenLayerBias[i] = 0d;
+                    int numberOfInputNeuronsIntoLayer;
+                    if (layerIndex == 0)
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfInputNeurons;
+                    }
+                    else
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfHiddenNeurons[layerIndex - 1];
+                    }
+                    for (int j = 0; j < numberOfInputNeuronsIntoLayer; j++)
+                    { 
+                        hiddenLayerMatrix[layerIndex][i,j] = random.NextDouble() * 2 - 1; // randomizing a number in range [-1,1]
+                    }
+                    if (bias)
+                    {
+                        hiddenLayerBias[layerIndex][i] = random.NextDouble() * 2 - 1;   // same here
+                    }
+                    else
+                    {
+                        hiddenLayerBias[layerIndex][i] = 0d;
+                    }
                 }
             }
             // INITIALIZATION FOR OUTPUT LAYER
             for (int i = 0; i < numberOfOutputNeurons; i++)
             {
-                for (int j = 0; j < numberOfHiddenNeurons; j++)
+                for (int j = 0; j < numberOfHiddenNeurons[numberOfHiddenLayers-1]; j++)
                 {
                     outputLayerMatrix[i, j] = random.NextDouble() * 2 - 1; // randomizing a number in range [-1,1]
                 }
@@ -431,21 +535,35 @@ namespace MLP_TAKE2
         {
             // FORWARD PROPGATION FOR HIDDEN LAYER
             
-
-            for(int i = 0; i<numberOfHiddenNeurons; i++)
+            for(int layerIndex = 0; layerIndex< numberOfHiddenLayers; layerIndex++)
             {
-                weighedSumsHiddenLayer[i] = 0;
-                for(int j = 0; j < numberOfInputNeurons; j++)
+                for(int i = 0; i<numberOfHiddenNeurons[layerIndex]; i++)
                 {
-                    weighedSumsHiddenLayer[i] += currentSample[j] * hiddenLayerMatrix[i,j]; 
+                    weighedSumsHiddenLayer[layerIndex][i] = 0;
+                    int numberOfInputNeuronsIntoLayer;
+                    if (layerIndex == 0)
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfInputNeurons;
+                    }
+                    else
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfHiddenNeurons[layerIndex - 1];
+                    }
+                    for (int j = 0; j < numberOfInputNeuronsIntoLayer; j++)
+                    {
+                        if (layerIndex == 0)
+                        {
+                            weighedSumsHiddenLayer[layerIndex][i] += currentSample[j] * hiddenLayerMatrix[layerIndex][i,j]; 
+                        }
+                        else
+                        {
+                            weighedSumsHiddenLayer[layerIndex][i] += hiddenLayerOutputs[layerIndex-1][j] * hiddenLayerMatrix[layerIndex][i, j];
+                        }
+                    }
+                    weighedSumsHiddenLayer[layerIndex][i] += hiddenLayerBias[layerIndex][i];
+                    // not sure if it's the right place for this line but whatever, I guess it is
+                    hiddenLayerOutputs[layerIndex][i] = Sigmoid(weighedSumsHiddenLayer[layerIndex][i]);
                 }
-                weighedSumsHiddenLayer[i] += hiddenLayerBias[i];
-            }
-            
-
-            for(int i = 0; i < numberOfHiddenNeurons; i++)
-            {
-                hiddenLayerOutputs[i] = Sigmoid(weighedSumsHiddenLayer[i]);
             }
 
             // FORWARD PROPGATION FOR OUTPUT LAYER
@@ -453,15 +571,12 @@ namespace MLP_TAKE2
             for (int i = 0; i<numberOfOutputNeurons; i++)
             {
                 weighedSumsOutputLayer[i] = 0;
-                for(int j = 0; j< numberOfHiddenNeurons; j++)
+                for(int j = 0; j< numberOfHiddenNeurons[numberOfHiddenLayers-1]; j++)
                 {
-                    weighedSumsOutputLayer[i] += hiddenLayerOutputs[j] * outputLayerMatrix[i, j];
+                    weighedSumsOutputLayer[i] += hiddenLayerOutputs[numberOfHiddenLayers - 1][j] * outputLayerMatrix[i, j];
                 }
                 weighedSumsOutputLayer[i] += outputLayerBias[i];
-            }
-
-            for (int i = 0; i < numberOfOutputNeurons; i++)
-            {
+                // there was another loop that was iterating over the same range, so i moved the line below here //DELETE THE COMMENT LATER
                 outputLayerOutputs[i] = Sigmoid(weighedSumsOutputLayer[i]);
             }
         }
@@ -483,11 +598,11 @@ namespace MLP_TAKE2
 
             for(int i = 0; i < numberOfOutputNeurons ; i++)
             {
-                for(int j = 0; j<numberOfHiddenNeurons ; j++)
+                outputLayerFactor[i] = SigmoidDerivative(weighedSumsOutputLayer[i]) * (outputLayerOutputs[i] - desiredOutput[i]);
+                for(int j = 0; j<numberOfHiddenNeurons[numberOfHiddenLayers - 1] ; j++)
                 {
                     // formula is on paper, point 8
-                    outputLayerGradientMatrix[i, j] = hiddenLayerOutputs[j] * SigmoidDerivative(weighedSumsOutputLayer[i])
-                        * (outputLayerOutputs[i] - desiredOutput[i]);
+                    outputLayerGradientMatrix[i, j] = hiddenLayerOutputs[numberOfHiddenLayers - 1][j] * outputLayerFactor[i];
                 }
                 // The weight of the bias term in a layer is updated in the same fashion as all the other weights are.
                 // What makes it different is that it is independent of output from previous layers.
@@ -495,43 +610,118 @@ namespace MLP_TAKE2
                 // src: https://www.quora.com/How-is-bias-updated-in-neural-network
                 // PSA: Yes I am really desperate so I'm gonna take answers from quora.
                 // Take this with a pinch of salt, I am not sure if I'm doing it the right way.
-                outputLayerBiasGradient[i] = 1.0 * SigmoidDerivative(weighedSumsOutputLayer[i])
-                        * (outputLayerOutputs[i] - desiredOutput[i]);
+                outputLayerBiasGradient[i] = outputLayerFactor[i];
             }
 
 
-            // HIDDEN LAYER BACKWARD PROPAGATION
-
-            for (int i = 0; i < numberOfHiddenNeurons; i++)
+            // HIDDEN LAYERS BACKWARD PROPAGATION
+            for(int layerIndex = numberOfHiddenLayers - 1; layerIndex >=0; layerIndex--)
             {
-                for (int j = 0; j < numberOfInputNeurons; j++)
+                for (int i = 0; i < numberOfHiddenNeurons[layerIndex]; i++)
                 {
-                    // I added this not so long ago, I didn't clear out the matrix.
-                    hiddenLayerGradientMatrix[i, j] = 0;
-                    for (int k = 0; k < numberOfOutputNeurons; k++)
+                    //CALCULATING NEURON FACTOR
+                    // FOR LAST HIDDEN LAYER
+                    hiddenLayerFactors[layerIndex][i] = 0;
+                    if (layerIndex == numberOfHiddenLayers - 1)
                     {
-                        // formula is on paper, point 9
-                        // I swear to god if this works i'm going to apply to openai
-                        hiddenLayerGradientMatrix[i, j] += (outputLayerOutputs[k] - desiredOutput[k]) * SigmoidDerivative(weighedSumsOutputLayer[k]) * outputLayerMatrix[k, i] *
-                            SigmoidDerivative(weighedSumsHiddenLayer[i]) * currentSample[j];
+                        for (int outputIndex = 0; outputIndex < numberOfOutputNeurons; outputIndex++)
+                        {
+                            hiddenLayerFactors[layerIndex][i] += outputLayerFactor[outputIndex] * outputLayerMatrix[outputIndex, i];
+                        }
+                        hiddenLayerFactors[layerIndex][i] *= SigmoidDerivative(hiddenLayerOutputs[layerIndex][i]);
+                        hiddenLayerBiasGradient[layerIndex][i] = hiddenLayerFactors[layerIndex][i];
                     }
-                    double result = hiddenLayerGradientMatrix[i, j] * (1.0 / numberOfOutputNeurons);
-                    hiddenLayerGradientMatrix[i, j] = result;
-                }
-                
+                    else
+                    {
+                        int numberOfNeuronsInNextLayer = numberOfHiddenNeurons[layerIndex+1];
+                        for (int outputIndex = 0; outputIndex < numberOfNeuronsInNextLayer; outputIndex++)
+                        {
+                            hiddenLayerFactors[layerIndex][i] += hiddenLayerFactors[layerIndex+1][outputIndex] * hiddenLayerMatrix[layerIndex+1][outputIndex, i];
+                        }
+                        hiddenLayerFactors[layerIndex][i] *= SigmoidDerivative(hiddenLayerOutputs[layerIndex][i]);
+                        hiddenLayerBiasGradient[layerIndex][i] = hiddenLayerFactors[layerIndex][i];
+                    }
 
-            }
-            // HERE WE CALCULATE BIAS DERIVATIVE FOR HIDDEN LAYER
-            // Take this with a pinch of salt, I am not sure if I'm doing it the right way.
-            for(int i = 0; i < numberOfHiddenNeurons; i++)
-            {
-                hiddenLayerBiasGradient[i] = 0;
-                for(int j = 0; j< numberOfOutputNeurons; j++)
-                {
-                    hiddenLayerBiasGradient[i] += (outputLayerOutputs[j] - desiredOutput[j]) * SigmoidDerivative(weighedSumsOutputLayer[j]) * SigmoidDerivative(weighedSumsHiddenLayer[i]) *
-                        outputLayerMatrix[j, i];
+                    int numberOfLayerInputs;
+                    if(layerIndex == numberOfHiddenLayers-1)
+                    {
+                        numberOfLayerInputs = numberOfHiddenNeurons[layerIndex - 1];
+                        for (int j = 0; j < numberOfLayerInputs; j++)
+                        {
+                            // should we divide it by the number of output neurons or not?
+                            hiddenLayerGradientMatrix[layerIndex][i, j] = 1.0 / numberOfOutputNeurons * hiddenLayerFactors[layerIndex][i] * hiddenLayerOutputs[layerIndex-1][j];
+                        }
+                    }
+                    else if(layerIndex == 0)
+                    {
+                        numberOfLayerInputs = numberOfInputNeurons;
+                        for (int j = 0; j < numberOfLayerInputs; j++)
+                        {
+                            hiddenLayerGradientMatrix[layerIndex][i, j] = 1.0 / numberOfHiddenNeurons[layerIndex + 1] * hiddenLayerFactors[layerIndex][i] * currentSample[j];
+                        }
+                    }
+                    else
+                    {
+                        numberOfLayerInputs = numberOfHiddenNeurons[layerIndex - 1];
+                        for (int j = 0; j < numberOfLayerInputs; j++)
+                        {
+                            hiddenLayerGradientMatrix[layerIndex][i, j] = 1.0 / numberOfHiddenNeurons[layerIndex + 1] * hiddenLayerFactors[layerIndex][i] * hiddenLayerOutputs[layerIndex - 1][j];
+                        }
+                    }
+                    
+
+                    /*
+                    int numberOfInputNeuronsIntoLayer;
+                    if (layerIndex == 0)
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfInputNeurons;
+                    }
+                    else
+                    {
+                        numberOfInputNeuronsIntoLayer = numberOfHiddenNeurons[layerIndex - 1];
+                    }
+                    for (int j = 0; j < numberOfInputNeuronsIntoLayer; j++)
+                    {
+                        // I added this not so long ago, I didn't clear out the matrix.
+                        hiddenLayerGradientMatrix[layerIndex][i, j] = 0;
+                        for (int k = 0; k < numberOfOutputNeurons; k++)
+                        {
+                            // formula is on paper, point 9
+                            // I swear to god if this works i'm going to apply to openai
+                            if(layerIndex == numberOfHiddenLayers - 1)
+                            {
+                                hiddenLayerGradientMatrix[layerIndex][i, j] += outputLayerFactor[k] * outputLayerMatrix[k, i];
+                            }
+                            else if(layerIndex == 0)
+                            {
+
+                            }
+                            else
+                            {
+                                hiddenLayerGradientMatrix[layerIndex][i, j] += (outputLayerOutputs[k] - desiredOutput[k]) * SigmoidDerivative(weighedSumsHiddenLayer[layerIndex+1][k]) * outputLayerMatrix[k, i] *
+                                    SigmoidDerivative(weighedSumsHiddenLayer[layerIndex][i]) * currentSample[j];
+                            }
+                        }
+                        double result = hiddenLayerGradientMatrix[layerIndex][i, j] * (1.0 / numberOfOutputNeurons);
+                        hiddenLayerGradientMatrix[layerIndex][i, j] = result;
+                    }
+                    */
+
                 }
-                hiddenLayerBiasGradient[i] *= 1.0 / numberOfOutputNeurons;
+                /*
+                // HERE WE CALCULATE BIAS DERIVATIVE FOR HIDDEN LAYER
+                // Take this with a pinch of salt, I am not sure if I'm doing it the right way.
+                for(int i = 0; i < numberOfHiddenNeurons; i++)
+                {
+                    hiddenLayerBiasGradient[i] = 0;
+                    for(int j = 0; j< numberOfOutputNeurons; j++)
+                    {
+                        hiddenLayerBiasGradient[i] += (outputLayerOutputs[j] - desiredOutput[j]) * SigmoidDerivative(weighedSumsOutputLayer[j]) * SigmoidDerivative(weighedSumsHiddenLayer[i]) *
+                            outputLayerMatrix[j, i];
+                    }
+                    hiddenLayerBiasGradient[i] *= 1.0 / numberOfOutputNeurons;
+                }
+                */
             }
         }
 
@@ -545,9 +735,5 @@ namespace MLP_TAKE2
         {
             return Sigmoid(x)*(1-Sigmoid(x));
         }
-
-
-
-
     }
 }
