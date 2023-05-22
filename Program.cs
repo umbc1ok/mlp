@@ -134,7 +134,7 @@ MLP mlp = new MLP(4, 4, 3);
 mlp.LoadData("../../../training.data");
 
 Console.WriteLine("TRAINING:");
-mlp.Train(1000,0.1,0.9, true,true);
+mlp.Train(1000,0.1,0.9, true,true, "iristraining", 100);
 Console.WriteLine("FINISHED TRAINING:");
 Console.WriteLine("Testing learning samples:");
 mlp.Test(0, 130);

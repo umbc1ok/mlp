@@ -233,7 +233,7 @@ namespace MLP_TAKE2
             return result;
         }
 
-        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle)
+        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle, string filename, int saveinterval)
         {
             //NA RAZIE JEST HARDCODOWANE BO CHCE MIEC TYLKO ROZPISANY ALGORYTM (numberOfSamples ofc)
             int numberOfSamples = 130;
@@ -256,7 +256,14 @@ namespace MLP_TAKE2
                 }
                 //Console.WriteLine("Blad dla calej warstwy:" + mse);
                 //Console.WriteLine("Sredni blad dla calej warstwy:" + mse/(double)numberOfSamples);
+                if(numberOfEpochs > 0 && numberOfEpochs%saveinterval == 0)
+                {
+                    var n = i + 1;
+                    SaveNetworkToFile("../../../networks/" + filename + "_epoch_" + n);
+                }
             }
+            SaveNetworkToFile("../../../" + filename + "_epoch_" + numberOfEpochs);
+
         }
 
         private string convertMultipleListToString(double[,] list)
@@ -279,18 +286,21 @@ namespace MLP_TAKE2
             }
 
             string formattedString = string.Join("\n", rowsAsStrings);
-            Console.WriteLine("multiple array string : " + formattedString + "\n\n");
+            //Console.WriteLine("multiple array string : " + formattedString + "\n\n");
             return formattedString;
         }
 
         private string convertSingleListToString(double[] list)
         {
-            string formattedString = "";
+            //Console.WriteLine("SINGLE ARRAY LENGTH : " + list.Length + "\n\n");
+            List<string> array = new List<string>();
+            //string formattedString = "";
             for (int i=0; i < list.Length; i++)
             {
-                formattedString = string.Join(" , ", list[i].ToString());
+                array.Add(list[i].ToString());
             }
-            Console.WriteLine("single array string : "+formattedString + "\n\n");
+            string formattedString = string.Join(" , ", array);
+            //Console.WriteLine("single array string : "+formattedString + "\n\n");
             return formattedString;
         }
 
@@ -319,24 +329,24 @@ namespace MLP_TAKE2
                 mlpstring += convertSingleListToString(outputLayerOutputs) + " endl ";
 
                 File.WriteAllText(filename, mlpstring);
-                Console.WriteLine("\nmlpstring\n" + mlpstring + "\n\n");
-                Console.WriteLine("Class saved to file: " + filename);
+                //Console.WriteLine("\nmlpstring\n" + mlpstring + "\n\n");
+                //Console.WriteLine("Class saved to file: " + filename);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error saving class to file: " + ex.Message);
+                //Console.WriteLine("Error saving class to file: " + ex.Message);
             }
         }
         
         private double[,] convertStringToMultipleArray(string line)
         {
-            Console.WriteLine("multiple: ");
+            //Console.WriteLine("multiple: ");
             string[] rowStrings = line.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
             int rows = rowStrings.Length;
             int columns = rowStrings[0].Split(new[] { " , " }, StringSplitOptions.RemoveEmptyEntries).Length;
 
-            Console.WriteLine(rows + " _ " + columns + "\n");
-            Console.WriteLine(line + "\n\n");
+            //Console.WriteLine(rows + " _ " + columns + "\n");
+            //Console.WriteLine(line + "\n\n");
             double[,] array = new double[rows, columns];
 
             for (int i = 0; i < rows; i++)
@@ -363,8 +373,8 @@ namespace MLP_TAKE2
             string[] valueStrings = line.Split(new[] { " , " }, StringSplitOptions.None);
             double[] list = new double[valueStrings.Length];
 
-            Console.WriteLine("single: " + valueStrings.Length + "\n");
-            Console.WriteLine(line + "\n\n");
+            //Console.WriteLine("single: " + valueStrings.Length + "\n");
+            //Console.WriteLine(line + "\n\n");
             for (int i = 0; i < valueStrings.Length; i++)
             {
                 if (double.TryParse(valueStrings[i], out double value))
@@ -375,7 +385,7 @@ namespace MLP_TAKE2
                 {
                     Console.WriteLine("error in converting at ["+ i+ "]: " + valueStrings[i]);
                 }
-                Console.WriteLine("list[" + i + "]: " + list[i]);
+                //Console.WriteLine("list[" + i + "]: " + list[i]);
             }
             return list;
         }
@@ -395,11 +405,11 @@ namespace MLP_TAKE2
                 obj.numberOfInputNeurons = inputNeurons;
                 obj.numberOfHiddenNeurons = hiddenNeurons;
                 obj.numberOfOutputNeurons = outputNeurons;
-                Console.WriteLine("inputs: "+obj.numberOfInputNeurons+", hidden: "+obj.numberOfHiddenNeurons+", output: "+obj.numberOfOutputNeurons+"\n\n");
+                //Console.WriteLine("inputs: "+obj.numberOfInputNeurons+", hidden: "+obj.numberOfHiddenNeurons+", output: "+obj.numberOfOutputNeurons+"\n\n");
                 obj.setArraysFromFile(lines);
 
 
-                Console.WriteLine("Class loaded from file: " + filename);
+                //Console.WriteLine("Class loaded from file: " + filename);
                 return obj;
             }
             catch (Exception ex)
@@ -487,14 +497,9 @@ namespace MLP_TAKE2
         {
             for(int i = 0; i < numberOfInputNeurons; i++)
             {
-                try
-                {
-                    Console.WriteLine("data["+numberOfSample+"] length: " + data.ElementAt(i).Count + " i: "+i);
-                    currentSample[i] = data.ElementAt(numberOfSample).ElementAt(i);
-
-                } catch (Exception e) { Console.WriteLine("number of samples error: " + e); }
+                currentSample[i] = data.ElementAt(numberOfSample).ElementAt(i);
             }
-            for(int i = numberOfInputNeurons; i< numberOfOutputNeurons+numberOfInputNeurons; i++)
+            for (int i = numberOfInputNeurons; i< numberOfOutputNeurons+numberOfInputNeurons; i++)
             {
                 desiredOutput[i-numberOfInputNeurons] = data.ElementAt(numberOfSample).ElementAt(i);
             }
