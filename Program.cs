@@ -1,7 +1,7 @@
 ﻿
 using MLP_TAKE2;
 using System.Runtime.Serialization.Formatters.Binary;
-
+/*
 MLP mlp;
 bool bias = false;
 bool fromFile = false;
@@ -92,7 +92,7 @@ if(mode == "1")
         saveToFilename = Console.ReadLine();
     }
     
-    mlp.Train(epochs, 1, 0.9, saveToFilename);
+    mlp.Train(epochs, 0.1, 0.9);
 }
 
 
@@ -123,22 +123,26 @@ MLP ReadNetworkFromFile(String filename)
         return null;
     }
 }
-
+*/
 //mode == "1"  -> training
 //mode == "2"  -> test 
 
 //**************************************************************
 
-//MLP mlp = new MLP(4, 4, 3, true);
+MLP mlp = new MLP(4, 4, 3);
+
 mlp.LoadData("../../../training.data");
 
 Console.WriteLine("TRAINING:");
-mlp.Train(1000,0.1,1, "");
+mlp.Train(1000,0.1,0.9, true,true);
 Console.WriteLine("FINISHED TRAINING:");
 Console.WriteLine("Testing learning samples:");
 mlp.Test(0, 130);
 
+mlp.SaveNetworkToFile("../../../test");
+GC.Collect();
+MLP mlp2 = MLP.ReadNetworkFromFile("../../../test");
 
-mlp.LoadData("../../../testing.data");
+mlp2.LoadData("../../../testing.data");
 Console.WriteLine("Tests:");
-mlp.Test(0,20);
+mlp2.Test(0,20);

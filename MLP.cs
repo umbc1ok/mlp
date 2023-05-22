@@ -29,8 +29,14 @@ namespace MLP_TAKE2
         private double[,] hiddenLayerGradientMatrix;
         private double[,] outputLayerGradientMatrix;
 
+        private double[,] hiddenLayerDeltaMatrix;
+        private double[,] outputLayerDeltaMatrix;
+
         private double[] hiddenLayerBiasGradient;
         private double[] outputLayerBiasGradient;
+
+        private double[] hiddenLayerBiasDelta;
+        private double[] outputLayerBiasDelta;
 
 
         private double[] hiddenLayerBias;
@@ -50,11 +56,10 @@ namespace MLP_TAKE2
 
 
 
-
         private List<List<double>> data;
         private List<List<double>> desiredOutputs;
 
-        public MLP(int numberOfInputNeurons, int numberOfHiddenNeurons, int numberOfOutputs, bool bias) //(list<int> layers=[inputammout, hiddenammount1, hiddenammount2, ..., hiddenammountn, outputammount], int bias)
+        public MLP(int numberOfInputNeurons, int numberOfHiddenNeurons, int numberOfOutputs) //(list<int> layers=[inputammout, hiddenammount1, hiddenammount2, ..., hiddenammountn, outputammount], int bias)
         {
             this.numberOfInputNeurons = numberOfInputNeurons; //layers[0]
             this.numberOfHiddenNeurons = numberOfHiddenNeurons;//for i=1; i<layers.length-1; i++
@@ -74,32 +79,38 @@ namespace MLP_TAKE2
             weighedSumsHiddenLayer = new double[numberOfHiddenNeurons];
             hiddenLayerOutputs = new double[numberOfHiddenNeurons];
             hiddenLayerGradientMatrix = new double[numberOfHiddenNeurons, numberOfInputNeurons];
+            hiddenLayerDeltaMatrix = new double[numberOfHiddenNeurons, numberOfInputNeurons];
+            hiddenLayerBiasDelta = new double[numberOfHiddenNeurons];
             for (int i = 0; i < numberOfHiddenNeurons; i++)
             {
                 hiddenLayerBiasGradient[i] = 0;
                 weighedSumsHiddenLayer[i] = 0;
                 hiddenLayerOutputs[i] = 0;
+                hiddenLayerBiasDelta[i] = 0;
                 for(int j = 0; j< numberOfInputNeurons; j++)
                 {
                     hiddenLayerGradientMatrix[i,j] = 0;
+                    hiddenLayerDeltaMatrix[i,j] = 0;
                 }
             }
             
             outputLayerOutputs = new double[numberOfOutputNeurons];
             weighedSumsOutputLayer = new double[numberOfOutputNeurons]; //tu bylo numberOfHiddenNeurons, ale to byl razcej blad (nie krytyczny, program dzialal, ale duzy blad)
             outputLayerGradientMatrix = new double[numberOfOutputNeurons, numberOfHiddenNeurons];
+            outputLayerDeltaMatrix = new double[numberOfOutputNeurons, numberOfHiddenNeurons];
+            outputLayerBiasDelta = new double[numberOfOutputNeurons];
             for (int i = 0; i < numberOfOutputNeurons; i++)
             {
                 outputLayerBiasGradient[i] = 0;
                 weighedSumsOutputLayer[i] = 0;
                 outputLayerOutputs[i] = 0;
+                outputLayerBiasDelta[i] = 0;
                 for(int j = 0; j< numberOfHiddenNeurons; j++)
                 {
                     outputLayerGradientMatrix[i,j] = 0;
+                    outputLayerDeltaMatrix[i, j] = 0;
                 }
-
             }
-            
 
 
             data = new List<List<double>>();
@@ -116,7 +127,6 @@ namespace MLP_TAKE2
                 // Parse the first four columns as double values
                 for (int i = 0; i < 4; i++)
                 {
-                    double test;
                     rowData.Add(ConvertToDouble(columns[i]));
                 }
                 if (columns[4] == "Iris-setosa")
@@ -217,44 +227,34 @@ namespace MLP_TAKE2
 
             return result;
         }
-        private void LoadMockData(int index)
-        {
-            if(index == 0)
-            {
-                currentSample[0] = 5.1;
-                currentSample[1] = 3.5;
-                currentSample[2] = 1.4;
-                currentSample[3] = 0.2;
 
-                desiredOutput[0] = 1;
-                desiredOutput[1] = 0;
-                desiredOutput[2] = 0;
-            }
-
-        }
-
-        public void Train(int numberOfEpochs, double learningRate,double momentum, String saveToFilename)
+        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle)
         {
             //NA RAZIE JEST HARDCODOWANE BO CHCE MIEC TYLKO ROZPISANY ALGORYTM (numberOfSamples ofc)
-            int numberOfSamples = 75;
-            InitializeWeightsAndBiases();
+            int numberOfSamples = 130;
+            InitializeWeightsAndBiases(bias);
 
             for(int i =0; i<numberOfEpochs; i++)
             {
-                ShuffleData();
-                //Console.WriteLine("Epoch " + i.ToString() + ":");
+                double mse = 0d;
+                if (shuffle)
+                {
+                    ShuffleData();
+                }
                 for(int j = 0; j < numberOfSamples; j++)
                 {
                     getSample(j);
                     ForwardPropagation();
-                    CalculateCostFunction();
+                    mse+=CalculateCostFunction();
                     BackwardPropagation();
-                    ApplyNewWeights(learningRate);
+                    ApplyNewWeights(learningRate,momentum);
                 }
+                //Console.WriteLine("Blad dla calej warstwy:" + mse);
+                //Console.WriteLine("Sredni blad dla calej warstwy:" + mse/(double)numberOfSamples);
             }
         }
 
-        private void SaveNetworkToFile(String filename)
+        public void SaveNetworkToFile(String filename)
         {
             try
             {
@@ -278,7 +278,7 @@ namespace MLP_TAKE2
             }
         }
         
-        /*public MLP ReadNetworkFromFile(String filename)
+        public static MLP ReadNetworkFromFile(String filename)
         {
             try
             {
@@ -303,7 +303,7 @@ namespace MLP_TAKE2
                 Console.WriteLine("Error reading class from file: " + ex.Message);
                 return null;
             }
-        }*/
+        }
 
         private void ShuffleData()
         {
@@ -359,29 +359,37 @@ namespace MLP_TAKE2
                 desiredOutput[i-numberOfInputNeurons] = data.ElementAt(numberOfSample).ElementAt(i);
             }
         }
-        private void ApplyNewWeights(double learningRate)
+        private void ApplyNewWeights(double learningRate,double momentum)
         {
             //Applying for hidden layer
             for (int i = 0; i < numberOfHiddenNeurons; i++)
             {
                 for (int j = 0; j < numberOfInputNeurons; j++)
                 {
-                    hiddenLayerMatrix[i, j] += learningRate * -1.0 * hiddenLayerGradientMatrix[i, j];
+                    hiddenLayerMatrix[i, j] += learningRate * -1.0 * hiddenLayerGradientMatrix[i, j] 
+                        + hiddenLayerDeltaMatrix[i,j]*momentum; 
+                    // MOMENTUM
+                    hiddenLayerDeltaMatrix[i,j] = learningRate * -1.0 * hiddenLayerGradientMatrix[i, j]
+                        + hiddenLayerDeltaMatrix[i, j] * momentum;
                 }
-                hiddenLayerBias[i] += learningRate * -1.0 * hiddenLayerBiasGradient[i];
+                hiddenLayerBias[i] += learningRate * -1.0 * hiddenLayerBiasGradient[i] + hiddenLayerBiasDelta[i] * momentum;
+                hiddenLayerBiasDelta[i] = learningRate * -1.0 * hiddenLayerBiasGradient[i] + hiddenLayerBiasDelta[i] * momentum;
             }
             //Apply for output layer
             for (int i = 0; i < numberOfOutputNeurons; i++)
             {
                 for (int j = 0; j < numberOfHiddenNeurons; j++)
                 {
-                    outputLayerMatrix[i, j] += learningRate * -outputLayerGradientMatrix[i, j];
+                    outputLayerMatrix[i, j] += learningRate * -outputLayerGradientMatrix[i, j] + outputLayerDeltaMatrix[i,j]*momentum;
+                    // MOMENTUM
+                    outputLayerDeltaMatrix[i,j] = learningRate * -outputLayerGradientMatrix[i, j] + outputLayerDeltaMatrix[i, j] * momentum;
                 }
-                outputLayerBias[i] += learningRate * -1.0 * outputLayerBiasGradient[i];
+                outputLayerBias[i] += learningRate * -1.0 * outputLayerBiasGradient[i] + outputLayerBiasDelta[i]*momentum;
+                outputLayerBiasDelta[i] = learningRate * -1.0 * outputLayerBiasGradient[i] + outputLayerBiasDelta[i]*momentum;
             }
         }
 
-        private void InitializeWeightsAndBiases()
+        private void InitializeWeightsAndBiases(bool bias)
         {
             Random random = new Random();
 
@@ -392,7 +400,14 @@ namespace MLP_TAKE2
                 { 
                     hiddenLayerMatrix[i,j] = random.NextDouble() * 2 - 1; // randomizing a number in range [-1,1]
                 }
-                hiddenLayerBias[i] = random.NextDouble() * 2 - 1;   // same here
+                if (bias)
+                {
+                    hiddenLayerBias[i] = random.NextDouble() * 2 - 1;   // same here
+                }
+                else
+                {
+                    hiddenLayerBias[i] = 0d;
+                }
             }
             // INITIALIZATION FOR OUTPUT LAYER
             for (int i = 0; i < numberOfOutputNeurons; i++)
@@ -401,7 +416,14 @@ namespace MLP_TAKE2
                 {
                     outputLayerMatrix[i, j] = random.NextDouble() * 2 - 1; // randomizing a number in range [-1,1]
                 }
-                outputLayerBias[i] = random.NextDouble() * 2 - 1; // same here
+                if (bias)
+                {
+                    outputLayerBias[i] = random.NextDouble() * 2 - 1; // same here
+                }
+                else
+                {
+                    outputLayerBias[i] = 0;
+                }
             }
 
         }
