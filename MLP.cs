@@ -249,11 +249,14 @@ namespace MLP_TAKE2
             return result;
         }
 
-        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle, double minError)
+        public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle, double minError, bool loadedFromFile)
         {
             // UWAGA, HARDCODOWANY NUMBER OF SAMPLES
             //int numberOfSamples = 100;
-            InitializeWeightsAndBiases(bias);
+            if (!loadedFromFile)
+            {
+                InitializeWeightsAndBiases(bias);
+            }
             string toFile = "";
             for(int i =0; i<numberOfEpochs; i++)
             {
@@ -538,7 +541,18 @@ namespace MLP_TAKE2
             }
         }
 
-        private void InitializeWeightsAndBiases(bool bias)
+        public void SetBiasesToZero()
+        {
+            for (int i = 0; i < numberOfHiddenNeurons; i++)
+            {
+                hiddenLayerBias[i] = 0d;
+            }
+            for (int i = 0; i < numberOfOutputNeurons; i++)
+            {
+                outputLayerBias[i] = 0d;
+            }
+        }
+        public void InitializeWeightsAndBiases(bool bias)
         {
             Random random = new Random();
 
@@ -675,7 +689,7 @@ namespace MLP_TAKE2
                     hiddenLayerBiasGradient[i] += (outputLayerOutputs[j] - desiredOutput[j]) * SigmoidDerivative(weighedSumsOutputLayer[j]) * SigmoidDerivative(weighedSumsHiddenLayer[i]) *
                         outputLayerMatrix[j, i];
                 }
-                hiddenLayerBiasGradient[i] *= 1.0 / numberOfOutputNeurons;
+                //hiddenLayerBiasGradient[i] *= 1.0 / numberOfOutputNeurons;
             }
         }
 
@@ -689,9 +703,5 @@ namespace MLP_TAKE2
         {
             return Sigmoid(x)*(1-Sigmoid(x));
         }
-
-
-
-
     }
 }

@@ -27,8 +27,23 @@ Console.WriteLine("Tests:");
 mlp2.LoadIrisData("../../../testing.data");
 mlp2.TestIrises();
 
-
 */
+IFormatter f = new BinaryFormatter();
+/*
 MLP mlp = new MLP(4, 2, 4);
 mlp.LoadAutoEncoderData("../../../autoencoder.data");
-mlp.Train(200, 0.6, 0.0, true, true, 0.0);
+mlp.InitializeWeightsAndBiases(true);
+//mlp.Train(2000, 0.9, 0.0, true, true, 0.01, false);
+
+Stream str = new FileStream("../../../network.file", FileMode.Create, FileAccess.Write);
+
+f.Serialize(str, mlp);
+str.Close();
+*/
+
+Stream str = new FileStream("../../../network.file", FileMode.Open, FileAccess.Read);
+
+
+MLP mlp2 = (MLP)f.Deserialize(str);
+//mlp2.SetBiasesToZero();
+mlp2.Train(2000, 0.2, 0.9, false, true, 0.01, true);
