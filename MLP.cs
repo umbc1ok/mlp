@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace MLP_TAKE2
 {
+    [Serializable]
     internal class MLP
     {
         private double[] currentSample;
@@ -116,8 +117,9 @@ namespace MLP_TAKE2
             data = new List<List<double>>();
             desiredOutputs = new List<List<double>>();
         }
-        public void LoadData(string filename)
+        public void LoadIrisData(string filename)
         {
+            data.Clear();
             string[] lines = File.ReadAllLines(filename);
             foreach (string line in lines)
             {
@@ -155,6 +157,25 @@ namespace MLP_TAKE2
                 data.Add(rowData);
             }
         }
+        public void LoadAutoEncoderData(string filename)
+        {
+            data.Clear();
+            string[] lines = File.ReadAllLines(filename);
+            foreach (string line in lines)
+            {
+                string[] columns = line.Split(',');
+                List<double> rowData = new List<double>(columns.Length);
+
+                // Parse the first four columns as double values
+                for (int i = 0; i < 8; i++)
+                {
+                    rowData.Add(ConvertToDouble(columns[i]));
+                }
+                data.Add(rowData);
+            }
+        }
+
+
         public static double ConvertToDouble(string input)
         {
             double result = 0.0;
@@ -230,8 +251,8 @@ namespace MLP_TAKE2
 
         public void Train(int numberOfEpochs, double learningRate,double momentum,bool bias,bool shuffle, double minError)
         {
-            //NA RAZIE JEST HARDCODOWANE BO CHCE MIEC TYLKO ROZPISANY ALGORYTM (numberOfSamples ofc)
-            int numberOfSamples = 99;
+            // UWAGA, HARDCODOWANY NUMBER OF SAMPLES
+            //int numberOfSamples = 100;
             InitializeWeightsAndBiases(bias);
             string toFile = "";
             for(int i =0; i<numberOfEpochs; i++)
@@ -241,7 +262,7 @@ namespace MLP_TAKE2
                 {
                     ShuffleData();
                 }
-                for(int j = 0; j < numberOfSamples; j++)
+                for(int j = 0; j < data.Count; j++)
                 {
                     getSample(j);
                     ForwardPropagation();
@@ -333,34 +354,148 @@ namespace MLP_TAKE2
             }
         }
 
-        public void Test(int firstSampleIndex, int lastSampleIndex)
+        private void CollectTestData()
+        {
+            string data = "";
+            double[] outputErrors = new double[numberOfOutputNeurons];
+            double totalError = 0;
+            string sample = "\nWzorzec wejsciowy: ";
+            string desired = "\nPrzewidywane wyjscie: ";
+            string forwarded = "\nOtrzymane wyjscie: ";
+            for (int i = 0; i < numberOfInputNeurons; i++)
+            {
+                sample += currentSample[i];
+            }
+            for (int i = 0; i < numberOfOutputNeurons; i++)
+            {
+                desired += desiredOutput[i];
+                forwarded += outputLayerOutputs[i] + " ";
+                outputErrors[i] = outputLayerOutputs[i] - desiredOutput[i];
+                totalError += outputErrors[i];
+            }
+            string outputsOfHiddenLayer = "\nWyjscia warstwy ukrytej: \n";
+            for(int i = 0; i< numberOfHiddenNeurons; i++)
+            {
+                outputsOfHiddenLayer += hiddenLayerOutputs[i] + " ";
+            }
+
+            string weightMatrixOutput = "\nMacierz wag warstwy wyjsciowej: \n ";
+            for(int i = 0; i< numberOfOutputNeurons; i++)
+            {
+                for(int j = 0; j < numberOfHiddenNeurons; j++)
+                {
+                    weightMatrixOutput += outputLayerMatrix[i,j] + " ";
+                }
+                weightMatrixOutput += "\n";
+            }
+            string weightMatrixHidden = "\nMacierz wag warstwy ukrytej: \n ";
+            for (int i = 0; i < numberOfHiddenNeurons; i++)
+            {
+                for (int j = 0; j < numberOfInputNeurons; j++)
+                {
+                    weightMatrixHidden += hiddenLayerMatrix[i, j] + " ";
+                }
+                weightMatrixHidden += "\n";
+            }
+            data += sample + desired + forwarded + outputsOfHiddenLayer + weightMatrixOutput + weightMatrixHidden;
+            saveStringToFile("../../../Stats/Testing.data", data);
+        }
+        public void TestIrises()
         {
             Console.WriteLine("The result:");
             int correctlyClassified = 0;
             int incorrectlyClassified = 0;
-            for(int i = firstSampleIndex; i < lastSampleIndex; i++)
+            List<List<int>> confusionMatrix = new List<List<int>>();
+
+            //initialize matrix with zeroes
+            for (int i = 0; i < numberOfOutputNeurons; i++)
+            {
+                List<int> row = new List<int>();
+
+                for (int j = 0; j < numberOfOutputNeurons; j++)
+                {
+                    row.Add(0);
+                }
+
+                confusionMatrix.Add(row);
+            }
+
+            // iterujemy po wszystkich testowych
+            for (int i = 0; i < data.Count; i++)
             {
                 getSample(i);
                 ForwardPropagation();
-                double cost = CalculateCostFunction();
-                if (cost < 0.005)
+                CollectTestData();
+                int maxIndex = 0;
+                int maxExpectedIndex = 0;
+                // -1 because i want the value to be smaller than any element in the array
+                double maxValue = -1;
+                double maxExpectedValue = -1;
+                for (int j = 0; j < numberOfOutputNeurons; j++)
                 {
-                    correctlyClassified++;
+                    if (outputLayerOutputs[j] > maxValue)
+                    {
+                        maxIndex = j;
+                        maxValue = outputLayerOutputs[j];
+                    }
+                    if (desiredOutput[j] > maxExpectedValue)
+                    {
+                        maxExpectedIndex = j;
+                        maxExpectedValue = outputLayerOutputs[j];
+                    }
                 }
-                else
-                {
-                    incorrectlyClassified++;
-                }
-                /*
-                Console.Write(outputLayerOutputs[0]);
-                Console.Write(outputLayerOutputs[1]);
-                Console.Write(outputLayerOutputs[2]);
-                */
+                confusionMatrix[maxExpectedIndex][maxIndex]++;
             }
-            Console.WriteLine("Correctly classified:" + correctlyClassified);
-            Console.WriteLine("Incorrectly classified:" + incorrectlyClassified);
-        }
+            // CALCULATING TP, TN, FP, FN
+            // https://12ft.io/proxy?q=https%3A%2F%2Ftowardsdatascience.com%2Fconfusion-matrix-for-your-multi-class-machine-learning-model-ff9aa3bf7826
+            // SOURCE UPWARD
+            string result = "";
+            for (int i = 0; i < numberOfOutputNeurons; i++)
+            {
+                result += "CLASS:" + i + "\n";
+                int tp = confusionMatrix[i][i];
+                int tn = 0;
+                int fp = 0;
+                int fn = 0;
+                // TRUE NEGATIVE
+                for(int j = 0; j < numberOfOutputNeurons;j++)
+                {
+                    for (int k = 0; k < numberOfOutputNeurons; k++)
+                    {
+                        if(k != i && j != i)
+                        {
+                            tn += confusionMatrix[j][k];
+                        }
+                    }
+                }
+                //FALSE POSITIVE AND FALSE NEGATIVE
+                for(int j = 0; j<numberOfOutputNeurons; j++)
+                {
+                    if (j != i)
+                    {
+                        fp+=confusionMatrix[j][i];
+                        fn+=confusionMatrix[i][j];
+                    }
+                }
 
+                result += "TP: " + tp + " TN: " + tn + " FP: " + fp + " FN: " + fn;
+                result += "\n";
+                // SOURCE FOR METRICS:
+                // https://machinelearningmastery.com/precision-recall-and-f-measure-for-imbalanced-classification/
+
+                double precision = (double)tp /(double)(tp + fp);
+                double recall = tp / (tp + fn);
+                double fmeasure = (2 * precision * recall) / (precision + recall);
+                result += "Precision: " + precision + " Recall: " + recall + " F-measure: " + fmeasure + "\n\n";
+
+                // not sure about that but "na chlopski rozum" it works
+                correctlyClassified += tp;
+                incorrectlyClassified += fp;
+            }
+            result+= "Correctly classified:" + correctlyClassified + "\n";
+            result += "Incorrectly classified:" + incorrectlyClassified + "\n";
+            saveStringToFile("../../../Stats/confusionMatrix.data", result);
+        }
 
         private void getSample(int numberOfSample)
         {
@@ -506,9 +641,6 @@ namespace MLP_TAKE2
                 // The weight of the bias term in a layer is updated in the same fashion as all the other weights are.
                 // What makes it different is that it is independent of output from previous layers.
                 // The weight for the bias term in a layer is always fed an input of 1.
-                // src: https://www.quora.com/How-is-bias-updated-in-neural-network
-                // PSA: Yes I am really desperate so I'm gonna take answers from quora.
-                // Take this with a pinch of salt, I am not sure if I'm doing it the right way.
                 outputLayerBiasGradient[i] = 1.0 * SigmoidDerivative(weighedSumsOutputLayer[i])
                         * (outputLayerOutputs[i] - desiredOutput[i]);
             }
@@ -520,12 +652,10 @@ namespace MLP_TAKE2
             {
                 for (int j = 0; j < numberOfInputNeurons; j++)
                 {
-                    // I added this not so long ago, I didn't clear out the matrix.
                     hiddenLayerGradientMatrix[i, j] = 0;
                     for (int k = 0; k < numberOfOutputNeurons; k++)
                     {
                         // formula is on paper, point 9
-                        // I swear to god if this works i'm going to apply to openai
                         hiddenLayerGradientMatrix[i, j] += (outputLayerOutputs[k] - desiredOutput[k]) * SigmoidDerivative(weighedSumsOutputLayer[k]) * outputLayerMatrix[k, i] *
                             SigmoidDerivative(weighedSumsHiddenLayer[i]) * currentSample[j];
                     }
