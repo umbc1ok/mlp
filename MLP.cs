@@ -278,7 +278,7 @@ namespace MLP_TAKE2
                     Console.WriteLine("Reached minerror");
                     break;
                 }
-                if (i % 10 == 0) toFile += "Epoch " + i + " error: " + mse + "\n";
+                if (i % 10 == 0) toFile += i + " " + mse + "\n";
             }
             saveStringToFile("../../../Stats/globalError.data", toFile);
             
@@ -357,7 +357,7 @@ namespace MLP_TAKE2
             }
         }
 
-        private void CollectTestData()
+        private void CollectTestData(int sampleIndex)
         {
             string data = "";
             double[] outputErrors = new double[numberOfOutputNeurons];
@@ -401,7 +401,8 @@ namespace MLP_TAKE2
                 weightMatrixHidden += "\n";
             }
             data += sample + desired + forwarded + outputsOfHiddenLayer + weightMatrixOutput + weightMatrixHidden;
-            saveStringToFile("../../../Stats/Testing.data", data);
+            string Path = "../../../Stats/Testing" + sampleIndex + ".data";
+            saveStringToFile(Path, data);
         }
         public void TestIrises()
         {
@@ -428,7 +429,7 @@ namespace MLP_TAKE2
             {
                 getSample(i);
                 ForwardPropagation();
-                CollectTestData();
+                CollectTestData(i);
                 int maxIndex = 0;
                 int maxExpectedIndex = 0;
                 // -1 because i want the value to be smaller than any element in the array
