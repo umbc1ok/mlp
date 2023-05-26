@@ -45,5 +45,5 @@ Stream str = new FileStream("../../../network.file", FileMode.Open, FileAccess.R
 
 
 MLP mlp2 = (MLP)f.Deserialize(str);
-//mlp2.SetBiasesToZero();
+mlp2.SetBiasesToZero();
 mlp2.Train(2000, 0.2, 0.9, false, true, 0.01, true);

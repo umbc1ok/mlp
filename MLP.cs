@@ -272,6 +272,10 @@ namespace MLP_TAKE2
                     mse+=CalculateCostFunction();
                     BackwardPropagation();
                     ApplyNewWeights(learningRate,momentum);
+                    if (!bias)
+                    {
+                        SetBiasesToZero();
+                    }
                 }
                 if (mse<minError)
                 {
