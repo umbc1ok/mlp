@@ -29,21 +29,27 @@ mlp2.TestIrises();
 
 */
 IFormatter f = new BinaryFormatter();
-/*
-MLP mlp = new MLP(4, 2, 4);
+
+
+MLP mlp = new MLP(4, 3, 4);
 mlp.LoadAutoEncoderData("../../../autoencoder.data");
 mlp.InitializeWeightsAndBiases(true);
-//mlp.Train(2000, 0.9, 0.0, true, true, 0.01, false);
+mlp.Train(2000, 0.9, 0.2, false, true, 0.01, false);
+mlp.TestIrises();
 
 Stream str = new FileStream("../../../network.file", FileMode.Create, FileAccess.Write);
 
 f.Serialize(str, mlp);
 str.Close();
-*/
 
-Stream str = new FileStream("../../../network.file", FileMode.Open, FileAccess.Read);
+
+Stream str2 = new FileStream("../../../network.file", FileMode.Open, FileAccess.Read);
+
 
 
 MLP mlp2 = (MLP)f.Deserialize(str);
 mlp2.SetBiasesToZero();
 mlp2.Train(2000, 0.2, 0.9, false, true, 0.01, true);
+
+
+
