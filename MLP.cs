@@ -258,6 +258,10 @@ namespace MLP_TAKE2
                 InitializeWeightsAndBiases(bias);
             }
             string toFile = "";
+            if (!bias)
+            {
+                SetBiasesToZero();
+            }
             for(int i =0; i<numberOfEpochs; i++)
             {
                 double mse = 0d;
@@ -454,10 +458,20 @@ namespace MLP_TAKE2
                 }
                 confusionMatrix[maxExpectedIndex][maxIndex]++;
             }
+            string result = "";
+            for (int i = 0; i < numberOfOutputNeurons; i++)
+            {
+                for (int j = 0; j < numberOfOutputNeurons; j++)
+                {
+                    result += confusionMatrix[i][j] + " ";
+                }
+                result += "\n";
+            }
+            result += "\n";
             // CALCULATING TP, TN, FP, FN
             // https://12ft.io/proxy?q=https%3A%2F%2Ftowardsdatascience.com%2Fconfusion-matrix-for-your-multi-class-machine-learning-model-ff9aa3bf7826
             // SOURCE UPWARD
-            string result = "";
+            
             for (int i = 0; i < numberOfOutputNeurons; i++)
             {
                 result += "CLASS:" + i + "\n";
