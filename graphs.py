@@ -24,7 +24,8 @@ print(errors)
 
 # Plotting the graph
 plt.plot(epochs, errors, linestyle='-', color='b')
-plt.xlim(0, 2000)
+plt.xlim(0, 100)
+#plt.ylim(0, 1)
 # Labeling the graph
 plt.title('Error vs. Epoch')
 plt.xlabel('Epoch')

@@ -1,23 +1,18 @@
-1 0 0 0 
-0 1 0 0 
-0 0 1 0 
-0 0 0 1 
+19 0 0 
+0 16 0 
+0 1 14 
 
 CLASS:0
-TP: 1 TN: 3 FP: 0 FN: 0
+TP: 19 TN: 31 FP: 0 FN: 0
 Precision: 1 Recall: 1 F-measure: 1
 
 CLASS:1
-TP: 1 TN: 3 FP: 0 FN: 0
-Precision: 1 Recall: 1 F-measure: 1
+TP: 16 TN: 33 FP: 1 FN: 0
+Precision: 0,9411764705882353 Recall: 1 F-measure: 0,9696969696969697
 
 CLASS:2
-TP: 1 TN: 3 FP: 0 FN: 0
-Precision: 1 Recall: 1 F-measure: 1
+TP: 14 TN: 35 FP: 0 FN: 1
+Precision: 1 Recall: 0,9333333333333333 F-measure: 0,9655172413793104
 
-CLASS:3
-TP: 1 TN: 3 FP: 0 FN: 0
-Precision: 1 Recall: 1 F-measure: 1
-
-Correctly classified:4
-Incorrectly classified:0
+Correctly classified:49
+Incorrectly classified:1

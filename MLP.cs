@@ -506,8 +506,12 @@ namespace MLP_TAKE2
                 // https://machinelearningmastery.com/precision-recall-and-f-measure-for-imbalanced-classification/
 
                 double precision = (double)tp /(double)(tp + fp);
-                double recall = tp / (tp + fn);
-                double fmeasure = (2 * precision * recall) / (precision + recall);
+                double recall = double.NaN;
+                if (tp+fn != 0)
+                {
+                    recall = (double)tp / (double)(tp + fn);
+                }
+                double fmeasure = (2.0 * precision * recall) / (double)(precision + recall);
                 result += "Precision: " + precision + " Recall: " + recall + " F-measure: " + fmeasure + "\n\n";
 
                 // not sure about that but "na chlopski rozum" it works
