@@ -42,11 +42,14 @@ Stream str = new FileStream("../../../network.file", FileMode.Create, FileAccess
 f.Serialize(str, mlp);
 str.Close();
 
-/*
+
 Stream str2 = new FileStream("../../../network.file", FileMode.Open, FileAccess.Read);
 
 
-MLP mlp2 = (MLP)f.Deserialize(str2);
-//mlp2.SetBiasesToZero();
-mlp2.Train(2000, 0.9, 0.9, false, true, 0.01, true);
-*/
+
+MLP mlp2 = (MLP)f.Deserialize(str);
+mlp2.SetBiasesToZero();
+mlp2.Train(2000, 0.2, 0.9, false, true, 0.01, true);
+
+
+
